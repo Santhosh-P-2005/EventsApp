@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Text, View, TextInput, Button, Alert, TouchableOpacity, StyleSheet, ScrollView } from "react-native";
+import { Text, View, TextInput, Button, Alert, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator } from "react-native";
 import { useNavigation, useRoute } from "@react-navigation/native";
 
 const EditScreen = () => {
@@ -7,6 +7,7 @@ const EditScreen = () => {
     const [eventname, setEventName] = useState('');
     const [eventdate, setEventDate] = useState('');
     const [eventdesc, setEventDesc] = useState('');
+    const [loading, setLoading] = useState(false);
     const route = useRoute();
     const { id } = route.params;
 
@@ -27,6 +28,7 @@ const EditScreen = () => {
     };
 
     const EditEvent = () => {
+        setLoading(true);
         fetch(`http://192.168.42.27:5000/events/${id}`, {
             method: 'PUT',
             headers: {
@@ -39,6 +41,7 @@ const EditScreen = () => {
             }),
         })
             .then((res) => {
+                setLoading(false);
                 if (res.ok) {
                     Alert.alert('Event Edited Successfully');
                     navigation.navigate("Home");
@@ -46,7 +49,12 @@ const EditScreen = () => {
                     Alert.alert('Failed to edit the event');
                 }
             })
-            .catch((err) => console.log(err));
+            .catch((err) => 
+            {
+                setLoading(false);
+                console.log(err)
+            }
+        );
     }
 
     return (
@@ -71,7 +79,11 @@ const EditScreen = () => {
                 onChangeText={setEventDesc}
             />
             <TouchableOpacity style={styles.button} onPress={EditEvent}>
+            {loading ? (
+                <ActivityIndicator size="large" color="white"></ActivityIndicator>
+            ) : (
                 <Text style={styles.buttonText}>Save Changes</Text>
+            )}
             </TouchableOpacity>
         </ScrollView>
     );

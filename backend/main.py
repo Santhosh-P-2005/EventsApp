@@ -40,6 +40,7 @@ def store_events():
     data = request.json
     Event_Name = data['event_name']
     Event_Date = data['event_date']
+    Event_Poster = data['image']
     Event_Description= data['event_desc']
 
     id = str(uuid.uuid4())
@@ -47,8 +48,8 @@ def store_events():
     connection = create_connection()
     cursor = connection.cursor(dictionary = True)
 
-    query = "INSERT INTO events (Event_Name,Event_Date,Event_Description,id) VALUES (%s, %s, %s, %s)"
-    values = (Event_Name,Event_Date,Event_Description,id)
+    query = "INSERT INTO events (Event_Name,Event_Date,Event_Description,id,Event_Poster) VALUES (%s, %s, %s, %s, %s)"
+    values = (Event_Name,Event_Date,Event_Description,id,Event_Poster)
     cursor.execute(query, values)
 
     connection.commit()
