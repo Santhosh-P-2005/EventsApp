@@ -79,7 +79,7 @@ const AddEventScreen = () => {
         try {
             const imageUrl = await uploadImage(image);
             if (imageUrl) {
-                const response = await fetch('http://192.168.42.27:5000/events', {
+                const response = await fetch('http://10.1.125.39:5000/events', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ 
@@ -92,7 +92,7 @@ const AddEventScreen = () => {
                 setAdding(false);
                 if (response.ok) {
                     Alert.alert('Success', 'Event added successfully!');
-                    navigation.navigate("Home");
+                    navigation.navigate("Admin");
                 } else {
                     Alert.alert('Error', 'Failed to add event. Please try again.');
                 }
@@ -196,9 +196,9 @@ const styles = StyleSheet.create({
         width: '100%',
     },
     imageButton: {
-        padding: 15,
+        padding: 5,
         backgroundColor: '#6a1b9a',
-        borderRadius: 10,
+        borderRadius: 5,
     },
     imageButtonText: {
         color: '#fff',

@@ -6,43 +6,20 @@ import {
     TouchableOpacity,
     StyleSheet,
     Alert,
-    Animated
+    Animated,
+    Image
 } from "react-native";
 import { useNavigation, useFocusEffect } from "@react-navigation/native";
-import { MaterialIcons } from '@expo/vector-icons';
 
-const HomeScreen = () => {
+const UserScreen = () => {
     const [events, setEvents] = useState([]);
     const [fadeAnim] = useState(new Animated.Value(0));
-    const navigation = useNavigation();
 
     const fetchevents = () => {
-        fetch('http://192.168.42.27:5000/events')
+        fetch('http://10.1.125.39:5000/events')
             .then((res) => res.json())
             .then((data) => setEvents(data))
             .catch((err) => console.log(err));
-    };
-
-    const delete_press = (id) => {
-        Alert.alert(
-            'Confirm Delete',
-            'Are you sure you want to delete this event?',
-            [
-                { text: 'Cancel', style: 'cancel' },
-                { text: 'Delete', style: 'destructive', onPress: () => delete_event(id) },
-            ],
-            { cancelable: true }
-        );
-    };
-
-    const delete_event = (id) => {
-        fetch(`http://192.168.42.27:5000/events/${id}`, { method: 'DELETE' })
-            .then((res) => {
-                if (res.ok) {
-                    Alert.alert('Event Deleted Successfully');
-                    fetchevents();
-                }
-            });
     };
 
     const formatDate = (dateString) => {
@@ -68,29 +45,15 @@ const HomeScreen = () => {
     return (
         <View style={styles.container}>
             <Animated.View style={{ opacity: fadeAnim }}>
-            <TouchableOpacity style={styles.addButton} onPress={() => navigation.navigate('AddEvent')}>
-                <Text style={styles.addButtonText}>+ Add a New Event</Text>
-            </TouchableOpacity>
                 <ScrollView contentContainerStyle={styles.scrollContainer}>
                     {events.map((item) => (
                         <View key={item.id} style={styles.card}>
                             <View style={styles.actioncard}>
                                 <Text style={styles.title}>{item.Event_Name}</Text>
-                                <View style={styles.buttonRow}>
-                                    <TouchableOpacity
-                                        style={styles.iconButton}
-                                        onPress={() => navigation.navigate('EditEvent', { id: item.id })}
-                                    >
-                                        <MaterialIcons name="edit" size={20} color="white" />
-                                    </TouchableOpacity>
-                                    <TouchableOpacity
-                                        style={styles.iconButton}
-                                        onPress={() => delete_press(item.id)}
-                                    >
-                                        <MaterialIcons name="delete" size={20} color="white" />
-                                    </TouchableOpacity>
-                                </View>
                             </View>
+                            <Image
+                                source={{ uri: item.Event_poster }}
+                                style={styles.eventPoster}/>
                             <Text style={styles.date}>{formatDate(item.Event_Date)}</Text>
                             <Text style={styles.description}>{item.Event_Description}</Text>
                         </View>
@@ -102,7 +65,7 @@ const HomeScreen = () => {
     );
 };
 
-export default HomeScreen;
+export default UserScreen;
 
 const styles = StyleSheet.create({
     container: {
@@ -171,5 +134,11 @@ const styles = StyleSheet.create({
     },
     bottomPadding: {
         height: 100,
+    },
+    eventPoster: {
+      width: "100%",
+      height: 200,
+      borderRadius: 5,
+      marginBottom: 10,
     },
 });
