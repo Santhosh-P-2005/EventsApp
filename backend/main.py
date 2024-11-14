@@ -43,14 +43,16 @@ def store_events():
     Event_Date = data['event_date']
     Event_Poster = data['image']
     Event_Description= data['event_desc']
+    Event_Link= data['event_link']
+    Event_Location= data['event_loc']
 
     id = str(uuid.uuid4())
 
     connection = create_connection()
     cursor = connection.cursor(dictionary = True)
 
-    query = "INSERT INTO events (Event_Name,Event_Date,Event_Description,id,Event_Poster) VALUES (%s, %s, %s, %s, %s)"
-    values = (Event_Name,Event_Date,Event_Description,id,Event_Poster)
+    query = "INSERT INTO events (Event_Name,Event_Date,Event_Link,Event_Description,id,Event_Poster,Event_Location) VALUES (%s, %s, %s, %s, %s, %s, %s)"
+    values = (Event_Name,Event_Date,Event_Link,Event_Description,id,Event_Poster,Event_Location)
     cursor.execute(query, values)
 
     connection.commit()
@@ -66,13 +68,15 @@ def update_events(id):
     Event_Name = data['event_name']
     Event_Date = data['event_date']
     Event_Description= data['event_desc']
+    Event_Link= data['event_link']
+    Event_Location= data['event_loc']
     Event_Poster= data['image']
 
     connection = create_connection()
     cursor = connection.cursor(dictionary = True)
 
-    query = "UPDATE events SET Event_Name = %s, Event_Date = %s, Event_Description = %s, Event_Poster = %s WHERE id = %s"
-    values = (Event_Name,Event_Date,Event_Description,Event_Poster,id)
+    query = "UPDATE events SET Event_Name = %s, Event_Date = %s, Event_Link = %s, Event_Description = %s, Event_Poster = %s, Event_Location = %s WHERE id = %s"
+    values = (Event_Name,Event_Date,Event_Link,Event_Description,Event_Poster,Event_Location,id)
     cursor.execute(query, values)
 
     connection.commit()
@@ -206,6 +210,54 @@ def role_check():
         "role": user['role']
     }), 200
 
+
+# Fetch all users
+@app.route('/users', methods=['GET'])
+def get_users():
+    try:
+        connection = create_connection()
+        cursor = connection.cursor(dictionary=True)
+        cursor.execute("SELECT id, username, role FROM users")
+        users = cursor.fetchall()
+        cursor.close()
+        connection.close()
+        return jsonify(users), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+# Delete a user by ID
+@app.route('/users/<string:user_id>', methods=['DELETE'])
+def delete_user(user_id):
+    try:
+        connection = create_connection()
+        cursor = connection.cursor()
+        cursor.execute("DELETE FROM users WHERE id = %s", (user_id,))
+        connection.commit()
+        cursor.close()
+        connection.close()
+        return jsonify({"message": "User deleted successfully"}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+# Change user role
+@app.route('/users/<string:user_id>/role', methods=['PUT'])
+def update_user_role(user_id):
+    try:
+        data = request.json
+        new_role = data.get('role')
+
+        if new_role not in ['admin', 'user']:
+            return jsonify({"error": "Invalid role"}), 400
+
+        connection = create_connection()
+        cursor = connection.cursor()
+        cursor.execute("UPDATE users SET role = %s WHERE id = %s", (new_role, user_id))
+        connection.commit()
+        cursor.close()
+        connection.close()
+        return jsonify({"message": "Role updated successfully"}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
     app.run(host = '0.0.0.0' , port=5000)

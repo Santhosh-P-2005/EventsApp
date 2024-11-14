@@ -7,7 +7,7 @@ const firebaseConfig = {
   projectId: "eventsapp-8ff29",
   storageBucket: "eventsapp-8ff29.appspot.com",
   messagingSenderId: "13510641090",
-  appId: "1:13510041090:web:d5e6312a66f4a89431825b",
+  appId: "1:13510641090:web:d5e6312a66f4a89421825b",
   measurementId: "G-Z2F8EXYBBB"
 };
 

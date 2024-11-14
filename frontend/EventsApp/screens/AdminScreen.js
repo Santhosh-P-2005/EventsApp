@@ -7,20 +7,26 @@ import {
     StyleSheet,
     Alert,
     Animated,
-    Image
+    Modal,
+    Pressable,
+    Image,
+    Linking
 } from "react-native";
 import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import { MaterialIcons } from '@expo/vector-icons';
 import { ref, deleteObject } from "firebase/storage";
 import { storage } from '../firebase';
+import { BACKEND_URL } from '@env';
 
 const AdminScreen = () => {
     const [events, setEvents] = useState([]);
     const [fadeAnim] = useState(new Animated.Value(0));
     const navigation = useNavigation();
+    const [modalVisible, setModalVisible] = useState(false);
+    const [selectedImage, setSelectedImage] = useState(null);
 
     const fetchevents = () => {
-        fetch('http://10.1.125.39:5000/events')
+        fetch(`${BACKEND_URL}/events`)
             .then((res) => res.json())
             .then((data) => setEvents(data))
             .catch((err) => console.log(err));
@@ -40,7 +46,7 @@ const AdminScreen = () => {
     
 
     const delete_event = (id, eventPosterUrl) => {
-        fetch(`http://10.1.125.39:5000/events/${id}`, { method: 'DELETE' })
+        fetch(`${BACKEND_URL}/events/${id}`, { method: 'DELETE' })
             .then((res) => {
                 if (res.ok) {
                     if (eventPosterUrl) {
@@ -83,13 +89,24 @@ const AdminScreen = () => {
             fetchevents();
         }, [])
     );
+    
+    const openImageModal = (imageUri) => {
+        setSelectedImage(imageUri);
+        setModalVisible(true);
+    };
 
     return (
         <View style={styles.container}>
             <Animated.View style={{ opacity: fadeAnim }}>
-            <TouchableOpacity style={styles.addButton} onPress={() => navigation.navigate('AddEvent')}>
-                <Text style={styles.addButtonText}>+ Add a New Event</Text>
-            </TouchableOpacity>
+            <View style={styles.actionContainer}>
+                <TouchableOpacity style={styles.addButton} onPress={() => navigation.navigate('AdminAddEvent')}>
+                    <Text style={styles.ButtonText}>+ Add a New Event</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.signoutButton} onPress={() => navigation.navigate('Login')}>
+                    <MaterialIcons name="logout" size={20} color="white" />
+                    <Text style={styles.ButtonText}>Sign Out</Text>
+                </TouchableOpacity>
+            </View>
                 <ScrollView contentContainerStyle={styles.scrollContainer}>
                     {events.map((item) => (
                         <View key={item.id} style={styles.card}>
@@ -98,28 +115,62 @@ const AdminScreen = () => {
                                 <View style={styles.buttonRow}>
                                     <TouchableOpacity
                                         style={styles.iconButton}
-                                        onPress={() => navigation.navigate('EditEvent', { id: item.id })}
+                                        onPress={() => navigation.navigate('AdminEditEvent', { id: item.id })}
                                     >
                                         <MaterialIcons name="edit" size={20} color="white" />
                                     </TouchableOpacity>
                                     <TouchableOpacity
                                         style={styles.iconButton}
-                                        onPress={() => delete_press(item.id,item.Event_poster)}
+                                        onPress={() => delete_press(item.id,item.Event_Poster)}
                                     >
                                         <MaterialIcons name="delete" size={20} color="white" />
                                     </TouchableOpacity>
                                 </View>
                             </View>
-                            <Image
-                                source={{ uri: item.Event_poster }}
-                                style={styles.eventPoster}/>
-                            <Text style={styles.date}>{formatDate(item.Event_Date)}</Text>
-                            <Text style={styles.description}>{item.Event_Description}</Text>
+                            <TouchableOpacity onPress={() => openImageModal(item.Event_Poster)}>
+                                <Image
+                                    source={{ uri: item.Event_Poster }}
+                                    style={styles.eventPoster}
+                                />
+                            </TouchableOpacity>
+                            <Text style={styles.date}>Date :  (YYYY-MM-DD)</Text>
+                            <Text style={styles.bold}>{formatDate(item.Event_Date)}</Text>
+                            <Text style={styles.description}>About : </Text>
+                            <Text style={styles.bold}>       {item.Event_Description}</Text>
+                            <Text style={styles.location}>Location : </Text>
+                            <TouchableOpacity 
+                                style={styles.locationbutton} 
+                                onPress={() => Linking.openURL(item.Event_Location)}
+                            >
+                                <Text style={styles.locationText}>Open in Google Maps</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity 
+                                style={styles.button} 
+                                onPress={() => Linking.openURL(item.Event_Link)}
+                            >
+                                <Text style={styles.buttonText}>Register for Event</Text>
+                            </TouchableOpacity>
                         </View>
                     ))}
                     <View style={styles.bottomPadding} />
                 </ScrollView>
             </Animated.View>
+            <Modal
+                visible={modalVisible}
+                transparent={true}
+                animationType="fade"
+                onRequestClose={() => setModalVisible(false)}>
+                <View style={styles.modalContainer}>
+                    <Pressable onPress={() => setModalVisible(false)} style={styles.closeButton}>
+                        <Text style={styles.closeButtonText}>Close</Text>
+                    </Pressable>
+                    <Image
+                        source={{ uri: selectedImage }}
+                        style={styles.fullscreenImage}
+                        resizeMode="contain"
+                    />
+                </View>
+            </Modal>
         </View>
     );
 };
@@ -130,10 +181,82 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         padding: 10,
-        backgroundColor: '#f5f5f5',
+        backgroundColor: '#e0f7fa',
     },
     scrollContainer: {
         paddingBottom: 20,
+    },
+    
+    button: {
+        width: '50%',
+        padding: 8,
+        backgroundColor: '#D91656',
+        borderRadius: 10,
+        alignItems: 'center',
+        margin: 15,
+    },
+    buttonText: {
+        color: '#fff',
+        fontSize: 15,
+        fontWeight: '500',
+    },
+    modalContainer: {
+        flex: 1,
+        backgroundColor: 'rgba(0, 0, 0, 0.9)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    location: {
+        fontSize: 14,
+        color: '#666',
+    },
+    locationText: {
+        color: '#005B9F',
+        textDecorationLine: 'underline',
+    },
+    addButton: {
+      backgroundColor: '#6a1b9a',
+      paddingVertical: 15,
+      paddingHorizontal: 25,
+      borderRadius: 30,
+      alignSelf: 'center',
+      marginTop: 20,
+    },
+    signoutButton: {
+      backgroundColor: '#B51645',
+      paddingVertical: 15,
+      flexDirection: 'row',
+      paddingHorizontal: 25,
+      borderRadius: 30,
+      alignSelf: 'center',
+      marginTop: 20,
+    },
+    ButtonText: {
+      color: 'white',
+      fontSize: 16,
+      fontWeight: 'bold',
+    },
+    fullscreenImage: {
+        width: '100%',
+        height: '80%',
+    },
+    actionContainer: {
+      flexDirection: 'row',
+      justifyContent: 'space-around',
+      marginBottom: 20,
+    },
+    closeButton: {
+        position: 'absolute',
+        top: 40,
+        right: 20,
+        padding: 10,
+        backgroundColor: 'rgba(255, 255, 255, 0.7)',
+        borderRadius: 5,
+    },
+    closeButtonText: {
+        fontSize: 16,
+        fontWeight: 'bold',
+        color: '#000',
     },
     card: {
         backgroundColor: '#fff',
@@ -157,7 +280,8 @@ const styles = StyleSheet.create({
         fontSize: 18,
         fontWeight: 'bold',
         color: '#333',
-        marginTop: 10,
+        marginTop: 5,
+        marginBottom: 5,
     },
     date: {
         fontSize: 14,

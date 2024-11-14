@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { Text, View, TextInput, Alert, TouchableOpacity, Image, StyleSheet, ScrollView, ActivityIndicator, Dimensions, KeyboardAvoidingView, Platform } from "react-native";
-import { useNavigation, useRoute } from "@react-navigation/native";
+import { useNavigation } from "@react-navigation/native";
 import * as ImagePicker from 'expo-image-picker';
 import { storage } from "../firebase";
 import 'react-native-get-random-values';
@@ -10,11 +10,8 @@ import { BACKEND_URL } from '@env';
 
 const { width, height } = Dimensions.get('window');
 
-const EditScreen = () => {
+const AdminAddEventScreen = () => {
     const navigation = useNavigation();
-    const route = useRoute();
-    const { id } = route.params;
-
     const [eventname, setEventName] = useState('');
     const [eventdate, setEventDate] = useState('');
     const [eventdesc, setEventDesc] = useState('');
@@ -22,30 +19,12 @@ const EditScreen = () => {
     const [eventloc, setEventLoc] = useState('');
     const [image, setImage] = useState(null);
     const [imageurl, setImageurl] = useState(null);
-    const [loading, setLoading] = useState(false);
-
-    useEffect(() => {
-        fetch(`${BACKEND_URL}/events/${id}`)
-            .then((res) => res.json())
-            .then((data) => {
-                setEventName(data.Event_Name);
-                setEventDate(formatDate(data.Event_Date));
-                setEventDesc(data.Event_Description);
-                setEventLink(data.Event_Link);
-                setEventLoc(data.Event_Location);
-                setImageurl(data.Event_Poster);
-            })
-            .catch((err) => console.log(err));
-    }, [id]);
-
-    const formatDate = (dateString) => {
-        const date = new Date(dateString);
-        return date.toISOString().split('T')[0];
-    };
+    const [adding, setAdding] = useState(false);        
 
     const uploadImage = async (uri) => {
         try {
             const response = await fetch(uri);
+
             const blob = await response.blob();
 
             const fileName = `${uuidv4()}.jpg`;
@@ -55,7 +34,7 @@ const EditScreen = () => {
 
             const downloadUrl = await getDownloadURL(storageRef);
             setImageurl(downloadUrl);
-
+            
             return downloadUrl;
         } catch (error) {
             Alert.alert("Upload Error", `Failed to upload image: ${error.message}`);
@@ -69,10 +48,10 @@ const EditScreen = () => {
             Alert.alert('Permissions Required', 'To access your files, permission is needed.');
             return;
         }
-        const result = await ImagePicker.launchImageLibraryAsync({
-            mediaTypes: ImagePicker.MediaTypeOptions.Images,
-            allowsEditing: true,
-            quality: 1,
+        const result = await ImagePicker.launchImageLibraryAsync({ 
+            mediaTypes: ImagePicker.MediaTypeOptions.Images, 
+            allowsEditing: true, 
+            quality: 1 
         });
         if (!result.canceled) {
             setImage(result.assets[0].uri);
@@ -85,41 +64,39 @@ const EditScreen = () => {
             Alert.alert('Permission required', 'To access your camera, permission is needed.');
             return;
         }
-        const result = await ImagePicker.launchCameraAsync({
-            allowsEditing: true,
-            quality: 1,
+        const result = await ImagePicker.launchCameraAsync({ 
+            allowsEditing: true, 
+            quality: 1 
         });
         if (!result.canceled) {
             setImage(result.assets[0].uri);
         }
     };
 
-    const EditEvent = async () => {
-        setLoading(true);
-        let uploadedImageUrl = imageurl;
-
-        if (image) {
-            uploadedImageUrl = await uploadImage(image);
+    const AddEvent = async () => {
+        if (!image) {
+            Alert.alert("Error", "Please select and upload an image first");
+            return;
         }
-
-        fetch(`${BACKEND_URL}/events/${id}`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                event_name: eventname,
-                event_date: eventdate,
-                event_desc: eventdesc,
-                event_link: eventlink,
-                event_loc: eventloc,
-                image: uploadedImageUrl,
-            }),
-        })
-            .then((res) => {
-                setLoading(false);
-                if (res.ok) {
-                    Alert.alert('Event Edited Successfully');
+        setAdding(true);
+        try {
+            const imageUrl = await uploadImage(image);
+            if (imageUrl) {
+                const response = await fetch(`${BACKEND_URL}/events`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        event_name: eventname, 
+                        event_date: eventdate, 
+                        event_desc: eventdesc, 
+                        event_link: eventlink,
+                        event_loc: eventloc,
+                        image: imageUrl 
+                    }),
+                });
+                setAdding(false);
+                if (response.ok) {
+                    Alert.alert('Success', 'Event added successfully!');
                     setEventName('');
                     setEventDate('');
                     setEventDesc('');
@@ -127,22 +104,26 @@ const EditScreen = () => {
                     setEventLoc('');
                     setImage(null);
                     setImageurl(null);
-                    navigation.navigate("SuperAdmin");
+                    navigation.navigate("Admin");
                 } else {
-                    Alert.alert('Failed to edit the event');
+                    Alert.alert('Error', 'Failed to add event. Please try again.');
                 }
-            })
-            .catch((err) => {
-                setLoading(false);
-                console.log(err);
-            });
+            } else {
+                setAdding(false);
+                Alert.alert('Error', 'Failed to upload image.');
+            }
+        } catch (error) {
+            setAdding(false);
+            Alert.alert("Error", "Failed to add event. Please try again.");
+            console.error("Error adding event:", error);
+        }
     };
 
     return (
         <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : "height"}>
             <ScrollView contentContainerStyle={styles.scrollViewContent}>
                 <View style={styles.container}>
-                    <Text style={styles.title}>Edit Event</Text>
+                    <Text style={styles.title}>Add New Event</Text>
                     <TextInput
                         style={styles.input}
                         placeholder="Event Name"
@@ -188,14 +169,6 @@ const EditScreen = () => {
                         </TouchableOpacity>
                     </View>
 
-                    {imageurl && !image && (
-                        <Image
-                            source={{ uri: imageurl }}
-                            style={{ width: width * 0.8, height: height * 0.3, marginVertical: 20 }}
-                            resizeMode="contain"
-                        />
-                    )}
-
                     {image && (
                         <Image
                             source={{ uri: image }}
@@ -204,11 +177,11 @@ const EditScreen = () => {
                         />
                     )}
 
-                    <TouchableOpacity style={styles.button} onPress={EditEvent} disabled={loading}>
-                        {loading ? (
+                    <TouchableOpacity style={styles.button} onPress={AddEvent} disabled={adding}>
+                        {adding ? (
                             <ActivityIndicator size="small" color="white" />
                         ) : (
-                            <Text style={styles.buttonText}>Save Changes</Text>
+                            <Text style={styles.buttonText}>Add Event</Text>
                         )}
                     </TouchableOpacity>
                 </View>
@@ -217,7 +190,7 @@ const EditScreen = () => {
     );
 };
 
-export default EditScreen;
+export default AdminAddEventScreen;
 
 const styles = StyleSheet.create({
     scrollViewContent: {
@@ -236,12 +209,6 @@ const styles = StyleSheet.create({
         color: '#333',
         marginBottom: 20,
     },
-    textArea: {
-        height: 100,
-    },
-    textArea1: {
-        height: 70,
-    },
     input: {
         width: '100%',
         padding: 15,
@@ -252,10 +219,16 @@ const styles = StyleSheet.create({
         backgroundColor: '#fff',
         fontSize: 16,
     },
+    textArea1: {
+        height: 70,
+    },
+    textArea: {
+        height: 100,
+    },
     imagePickerContainer: {
         flexDirection: 'row',
         justifyContent: 'space-around',
-        marginVertical: 20,
+        marginVertical: 15,
         width: '100%',
     },
     imageButton: {

@@ -6,6 +6,7 @@ import { storage } from "../firebase";
 import 'react-native-get-random-values';
 import { v4 as uuidv4 } from 'uuid';
 import { ref, getDownloadURL, uploadBytes } from "firebase/storage";
+import { BACKEND_URL } from '@env';
 
 const { width, height } = Dimensions.get('window');
 
@@ -14,6 +15,8 @@ const AddEventScreen = () => {
     const [eventname, setEventName] = useState('');
     const [eventdate, setEventDate] = useState('');
     const [eventdesc, setEventDesc] = useState('');
+    const [eventlink, setEventLink] = useState('');
+    const [eventloc, setEventLoc] = useState('');
     const [image, setImage] = useState(null);
     const [imageurl, setImageurl] = useState(null);
     const [adding, setAdding] = useState(false);        
@@ -79,20 +82,29 @@ const AddEventScreen = () => {
         try {
             const imageUrl = await uploadImage(image);
             if (imageUrl) {
-                const response = await fetch('http://10.1.125.39:5000/events', {
+                const response = await fetch(`${BACKEND_URL}/events`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ 
                         event_name: eventname, 
                         event_date: eventdate, 
                         event_desc: eventdesc, 
+                        event_link: eventlink,
+                        event_loc: eventloc,
                         image: imageUrl 
                     }),
                 });
                 setAdding(false);
                 if (response.ok) {
                     Alert.alert('Success', 'Event added successfully!');
-                    navigation.navigate("Admin");
+                    setEventName('');
+                    setEventDate('');
+                    setEventDesc('');
+                    setEventLink('');
+                    setEventLoc('');
+                    setImage(null);
+                    setImageurl(null);
+                    navigation.navigate("SuperAdmin");
                 } else {
                     Alert.alert('Error', 'Failed to add event. Please try again.');
                 }
@@ -125,14 +137,32 @@ const AddEventScreen = () => {
                         onChangeText={setEventDate}
                     />
                     <TextInput
-                        style={styles.input}
+                        style={[styles.input, styles.textArea1]}
+                        placeholder="Event Registration Link"
+                        value={eventlink}
+                        onChangeText={setEventLink}
+                        multiline={true}
+                        numberOfLines={4}
+                        textAlignVertical="top"
+                    />
+                    <TextInput
+                        style={[styles.input, styles.textArea]}
                         placeholder="Event Description"
                         value={eventdesc}
                         onChangeText={setEventDesc}
+                        multiline={true}
+                        numberOfLines={4}
+                        textAlignVertical="top"
+                    />
+                    <TextInput
+                        style={styles.input}
+                        placeholder="Event Location (Google Maps Link)"
+                        value={eventloc}
+                        onChangeText={setEventLoc}
                     />
                     <View style={styles.imagePickerContainer}>
                         <TouchableOpacity style={styles.imageButton} onPress={pickimage}>
-                            <Text style={styles.imageButtonText}>Pick an Image from Gallery</Text>
+                            <Text style={styles.imageButtonText}>Pick Poster from Gallery</Text>
                         </TouchableOpacity>
                         <TouchableOpacity style={styles.imageButton} onPress={takeimage}>
                             <Text style={styles.imageButtonText}>Take a Photo</Text>
@@ -149,7 +179,7 @@ const AddEventScreen = () => {
 
                     <TouchableOpacity style={styles.button} onPress={AddEvent} disabled={adding}>
                         {adding ? (
-                            <ActivityIndicator size="large" color="white" />
+                            <ActivityIndicator size="small" color="white" />
                         ) : (
                             <Text style={styles.buttonText}>Add Event</Text>
                         )}
@@ -189,24 +219,31 @@ const styles = StyleSheet.create({
         backgroundColor: '#fff',
         fontSize: 16,
     },
+    textArea1: {
+        height: 70,
+    },
+    textArea: {
+        height: 100,
+    },
     imagePickerContainer: {
         flexDirection: 'row',
         justifyContent: 'space-around',
-        marginVertical: 20,
+        marginVertical: 15,
         width: '100%',
     },
     imageButton: {
-        padding: 5,
-        backgroundColor: '#6a1b9a',
-        borderRadius: 5,
+        padding: 10,
+        backgroundColor: '#D91656',
+        borderRadius: 7,
     },
     imageButtonText: {
         color: '#fff',
         fontSize: 16,
+        fontWeight:"500",
     },
     button: {
         width: '100%',
-        padding: 15,
+        padding: 12,
         backgroundColor: '#6a1b9a',
         borderRadius: 10,
         alignItems: 'center',

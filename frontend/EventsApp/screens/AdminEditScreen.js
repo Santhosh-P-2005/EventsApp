@@ -10,7 +10,7 @@ import { BACKEND_URL } from '@env';
 
 const { width, height } = Dimensions.get('window');
 
-const EditScreen = () => {
+const AdminEditScreen = () => {
     const navigation = useNavigation();
     const route = useRoute();
     const { id } = route.params;
@@ -127,7 +127,7 @@ const EditScreen = () => {
                     setEventLoc('');
                     setImage(null);
                     setImageurl(null);
-                    navigation.navigate("SuperAdmin");
+                    navigation.navigate("Admin");
                 } else {
                     Alert.alert('Failed to edit the event');
                 }
@@ -217,7 +217,7 @@ const EditScreen = () => {
     );
 };
 
-export default EditScreen;
+export default AdminEditScreen;
 
 const styles = StyleSheet.create({
     scrollViewContent: {
