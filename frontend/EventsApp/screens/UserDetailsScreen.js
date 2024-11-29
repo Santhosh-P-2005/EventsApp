@@ -19,7 +19,7 @@ const UserDetailsScreen = () => {
 
     // Fetch users from the backend
     const fetchUsers = () => {
-        fetch(`${BACKEND_URL}/users`)
+        fetch(`http://10.1.34.34:5000/users`)
             .then((res) => res.json())
             .then((data) => setUsers(data))
             .catch((err) => console.log(err));
@@ -38,7 +38,7 @@ const UserDetailsScreen = () => {
     };
 
     const confirmRemoveUser = (id) => {
-        fetch(`${BACKEND_URL}/users/${id}`, { method: 'DELETE' })
+        fetch(`http://10.1.34.34:5000/users/${id}`, { method: 'DELETE' })
             .then((res) => {
                 if (res.ok) {
                     Alert.alert('User Removed Successfully');
@@ -53,7 +53,7 @@ const UserDetailsScreen = () => {
     };
 
     const changeUserRole = (id, newRole) => {
-        fetch(`${BACKEND_URL}/users/${id}/role`, {
+        fetch(`http://10.1.34.34:5000/users/${id}/role`, {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',

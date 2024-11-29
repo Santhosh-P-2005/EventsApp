@@ -3,6 +3,7 @@ from flask_cors import CORS
 import mysql.connector
 import uuid
 import bcrypt 
+from datetime import date
 
 app = Flask(__name__)
 CORS(app)
@@ -258,6 +259,85 @@ def update_user_role(user_id):
         return jsonify({"message": "Role updated successfully"}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+
+# Route to add a new student
+@app.route('/add_student', methods=['POST'])
+def add_student():
+    data = request.json
+    name = data.get('name')
+    email = data.get('email')
+    enrollment_number = data.get('enrollment_number')
+
+    connection = create_connection()
+    cursor = connection.cursor()
+
+    try:
+        query = "INSERT INTO students (name, email, enrollment_number) VALUES (%s, %s, %s)"
+        cursor.execute(query, (name, email, enrollment_number))
+        connection.commit()
+        return jsonify({"message": "Student added successfully!"}), 201
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
+    finally:
+        cursor.close()
+        connection.close()
+
+
+@app.route('/get_students', methods=['GET'])
+def get_students():
+    connection = create_connection()
+    cursor = connection.cursor(dictionary=True)
+    cursor.execute("SELECT id, name, email FROM students")
+    students = cursor.fetchall()
+    cursor.close()
+    connection.close()
+    return jsonify(students)
+
+@app.route('/get_attendance', methods=['GET'])
+def get_attendance():
+    date = request.args.get('date')
+    connection = create_connection()
+    cursor = connection.cursor(dictionary=True)
+    query = "SELECT student_id, status FROM attendance WHERE date = %s"
+    cursor.execute(query, (date,))
+    attendance = cursor.fetchall()
+    cursor.close()
+    connection.close()
+    
+    attendance_dict = {record['student_id']: record['status'] for record in attendance}
+    return jsonify(attendance_dict)
+
+@app.route('/mark_attendance', methods=['POST'])
+def mark_attendance():
+    data = request.json
+    student_id = data['student_id']
+    status = data['status']
+    date = data['date']
+    
+    connection = create_connection()
+    cursor = connection.cursor()
+    query = "INSERT INTO attendance (student_id, status, date) VALUES (%s, %s, %s)"
+    cursor.execute(query, (student_id, status, date))
+    connection.commit()
+    cursor.close()
+    connection.close()
+    
+    return jsonify({"result": "Attendance marked successfully"})
+
+@app.route('/get_student_attendance', methods=['GET'])
+def get_student_attendance():
+    student_id = request.args.get('student_id')  # Get student ID
+    connection = create_connection()
+    cursor = connection.cursor(dictionary=True)
+    query = "SELECT student_id, date, status FROM attendance WHERE student_id = %s"  # Query for all attendance records for the student
+    cursor.execute(query, (student_id,))
+    attendance = cursor.fetchall()
+    cursor.close()
+    connection.close()
+    
+    return jsonify(attendance)
+
 
 if __name__ == '__main__':
     app.run(host = '0.0.0.0' , port=5000)

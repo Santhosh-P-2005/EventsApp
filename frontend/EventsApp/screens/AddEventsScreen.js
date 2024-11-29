@@ -82,7 +82,7 @@ const AddEventScreen = () => {
         try {
             const imageUrl = await uploadImage(image);
             if (imageUrl) {
-                const response = await fetch(`${BACKEND_URL}/events`, {
+                const response = await fetch(`http://10.1.34.34:5000/events`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ 

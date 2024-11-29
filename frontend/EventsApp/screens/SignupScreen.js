@@ -9,11 +9,11 @@ const SignupScreen = ({ navigation }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [isPasswordVisible, setIsPasswordVisible] = useState(false); 
+  const [isPasswordVisible, setIsPasswordVisible] = useState(false);
 
   const handleSignup = () => {
     setLoading(true);
-    fetch(`${BACKEND_URL}/signup`, {
+    fetch(`http://10.1.34.34:5000/signup`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -22,7 +22,7 @@ const SignupScreen = ({ navigation }) => {
         username,
         email,
         password,
-        role: 'superadmin',
+        role: 'user',
       }),
     })
       .then((response) => response.json())
@@ -121,7 +121,7 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontSize: 16,
-    color: '#000', // Dark color for better contrast
+    color: '#000',
     textAlign: 'center',
     marginBottom: 30,
   },
@@ -152,16 +152,16 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   signupButtonText: {
-    color: '#FD3A69', // Prominent color for button text
+    color: '#FD3A69',
     fontWeight: 'bold',
     fontSize: 16,
   },
   link: {
-    color: '#000', // Dark color for better contrast
+    color: '#000',
     textAlign: 'center',
   },
   signupText: {
-    color: '#FD3A69', // Prominent color for signup text
+    color: '#FD3A69',
     fontWeight: 'bold',
   },
   activityIndicator: {

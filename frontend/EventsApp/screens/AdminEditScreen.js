@@ -25,7 +25,7 @@ const AdminEditScreen = () => {
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
-        fetch(`${BACKEND_URL}/events/${id}`)
+        fetch(`http://10.1.34.34:5000/events/${id}`)
             .then((res) => res.json())
             .then((data) => {
                 setEventName(data.Event_Name);
@@ -102,7 +102,7 @@ const AdminEditScreen = () => {
             uploadedImageUrl = await uploadImage(image);
         }
 
-        fetch(`${BACKEND_URL}/events/${id}`, {
+        fetch(`http://10.1.34.34:5000/events/${id}`, {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json'

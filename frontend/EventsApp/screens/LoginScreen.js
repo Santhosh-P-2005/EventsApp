@@ -18,7 +18,7 @@ const LoginScreen = ({ navigation }) => {
     }
 
     setLoading(true);
-    fetch(`http://192.168.2.27:5000/login`, {
+    fetch(`http://10.1.34.34:5000/login`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

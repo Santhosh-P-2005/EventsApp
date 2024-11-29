@@ -1,329 +1,126 @@
 import React, { useState, useEffect, useCallback } from "react";
-import {
-  Text,
-  View,
-  ScrollView,
-  TouchableOpacity,
-  StyleSheet,
-  Alert,
-  Animated,
-  Image,
-  Modal,
-  Pressable,
-  Linking,
-  ActivityIndicator,
-} from "react-native";
+import { Text, View, TouchableOpacity, StyleSheet, Alert, Animated } from "react-native";
 import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import { MaterialIcons } from '@expo/vector-icons';
-import { ref, deleteObject } from "firebase/storage";
-import { storage } from '../firebase';
-import { BACKEND_URL } from '@env';
 
 const SuperAdminScreen = () => {
-  const [events, setEvents] = useState([]);
-  const [fadeAnim] = useState(new Animated.Value(0));
-  const [loading, setLoading] = useState(true);
-  const navigation = useNavigation();
-  const [modalVisible, setModalVisible] = useState(false);
-  const [selectedImage, setSelectedImage] = useState(null);
+    const [fadeAnim] = useState(new Animated.Value(0));
+    const navigation = useNavigation();
 
-  const fetchevents = () => {
-    setLoading(true); // Start loading
-    fetch(`${BACKEND_URL}/events`)
-      .then((res) => res.json())
-      .then((data) => {
-        setEvents(data);
-        setLoading(false); 
-      })
-      .catch((err) => {
-        console.log(err);
-        setLoading(false); // Stop loading on error
-      });
-  };
+    const fetchevents = () => {
+        fetch(`http://10.1.34.34:5000/events`)
+            .then((res) => res.json())
+            .then((data) => console.log(data)) // Just for demonstration, you can handle the events here
+            .catch((err) => console.log(err));
+    };
 
-  const delete_press = (id, eventPosterUrl) => {
-    Alert.alert(
-      'Confirm Delete',
-      'Are you sure you want to delete this event?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Delete', style: 'destructive', onPress: () => delete_event(id, eventPosterUrl) },
-      ],
-      { cancelable: true }
+    useEffect(() => {
+        fetchevents();
+        Animated.timing(fadeAnim, {
+            toValue: 1,
+            duration: 800,
+            useNativeDriver: true,
+        }).start();
+    }, []);
+
+    useFocusEffect(
+        useCallback(() => {
+            fetchevents();
+        }, [])
     );
-  };
 
-  const delete_event = (id, eventPosterUrl) => {
-    fetch(`${BACKEND_URL}/events/${id}`, { method: 'DELETE' })
-      .then((res) => {
-        if (res.ok) {
-          if (eventPosterUrl) {
-            const posterRef = ref(storage, eventPosterUrl);
-            deleteObject(posterRef)
-              .then(() => console.log('Poster deleted from Firebase'))
-              .catch((error) => console.error('Error deleting poster from Firebase:', error));
-          }
-          Alert.alert('Event Deleted Successfully');
-          fetchevents();
-        } else {
-          Alert.alert('Error', 'Failed to delete the event');
-        }
-      })
-      .catch((error) => console.error('Error deleting event:', error));
-  };
-
-  const formatDate = (dateString) => {
-    const date = new Date(dateString);
-    return date.toISOString().split('T')[0];
-  };
-
-  useEffect(() => {
-    fetchevents();
-    Animated.timing(fadeAnim, {
-      toValue: 1,
-      duration: 800,
-      useNativeDriver: true,
-    }).start();
-  }, []);
-
-  useFocusEffect(
-    useCallback(() => {
-      fetchevents();
-    }, [])
-  );
-
-  const openImageModal = (imageUri) => {
-    setSelectedImage(imageUri);
-    setModalVisible(true);
-  };
-
-  return (
-    <View style={styles.container}>
-      <Animated.View style={{ opacity: fadeAnim }}>
-        <View style={styles.actionContainer}>
-          <TouchableOpacity style={styles.userButton} onPress={() => navigation.navigate('UserDetails')}>
-            <Text style={styles.ButtonText}>View Users</Text>
-          </TouchableOpacity>
-                <TouchableOpacity style={styles.signoutButton} onPress={() => navigation.navigate('Login')}>
-                    <MaterialIcons name="logout" size={20} color="white" />
-                    <Text style={styles.ButtonText}>Sign Out</Text>
-                </TouchableOpacity>
-        </View>
-          <TouchableOpacity style={styles.addButton} onPress={() => navigation.navigate('AddEvent')}>
-            <Text style={styles.ButtonText}>+ Add a New Event</Text>
-          </TouchableOpacity>
-
-        {loading ? (
-          <ActivityIndicator size="large" color="#6a1b9a" style={styles.loadingIndicator} />
-        ) : (
-          <ScrollView contentContainerStyle={styles.scrollContainer}>
-            {events.map((item) => (
-              <View key={item.id} style={styles.card}>
-                <View style={styles.actioncard}>
-                  <Text style={styles.title}>{item.Event_Name}</Text>
-                  <View style={styles.buttonRow}>
+    return (
+        <View style={styles.container}>
+            <Animated.View style={{ opacity: fadeAnim }}>
+                <View style={styles.actionContainer}>
                     <TouchableOpacity
-                      style={styles.iconButton}
-                      onPress={() => navigation.navigate('EditEvent', { id: item.id })}
+                        style={[styles.button, { backgroundColor: '#00796b' }]}
+                        onPress={() => navigation.navigate('UserDetails')}
                     >
-                      <MaterialIcons name="edit" size={20} color="white" />
+                        <Text style={styles.buttonText}>View User Details</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
-                      style={styles.iconButton}
-                      onPress={() => delete_press(item.id, item.Event_Poster)}
+                        style={[styles.button, { backgroundColor: '#D32F2F' }]}
+                        onPress={() => navigation.navigate('Login')}
                     >
-                      <MaterialIcons name="delete" size={20} color="white" />
+                        <MaterialIcons name="logout" size={20} color="white" />
+                        <Text style={styles.buttonText}>Sign Out</Text>
                     </TouchableOpacity>
-                  </View>
                 </View>
-                <TouchableOpacity onPress={() => openImageModal(item.Event_Poster)}>
-                  <Image source={{ uri: item.Event_Poster }} style={styles.eventPoster} />
-                </TouchableOpacity>
-                <Text style={styles.date}>Date : (YYYY-MM-DD)</Text>
-                <Text style={styles.bold}>{formatDate(item.Event_Date)}</Text>
-                <Text style={styles.description}>About : </Text>
-                <Text style={styles.bold}> {item.Event_Description}</Text>
-                            <Text style={styles.location}>Location : </Text>
-                            <TouchableOpacity 
-                                style={styles.locationbutton} 
-                                onPress={() => Linking.openURL(item.Event_Location)}
-                            >
-                                <Text style={styles.locationText}>Open in Google Maps</Text>
-                            </TouchableOpacity>
-                <TouchableOpacity style={styles.button} onPress={() => Linking.openURL(item.Event_Link)}>
-                  <Text style={styles.buttonText}>Register for Event</Text>
-                </TouchableOpacity>
-              </View>
-            ))}
-            <View style={styles.bottomPadding} />
-          </ScrollView>
-        )}
-      </Animated.View>
-
-      <Modal visible={modalVisible} transparent={true} animationType="fade" onRequestClose={() => setModalVisible(false)}>
-        <View style={styles.modalContainer}>
-          <Pressable onPress={() => setModalVisible(false)} style={styles.closeButton}>
-            <Text style={styles.closeButtonText}>Close</Text>
-          </Pressable>
-          <Image source={{ uri: selectedImage }} style={styles.fullscreenImage} resizeMode="contain" />
+                <View style={styles.boxContainer}>
+                    <TouchableOpacity
+                        style={[styles.box, { backgroundColor: '#3f51b5' }]}
+                        onPress={() => navigation.navigate('SuperAdminEvent')}
+                    >
+                        <Text style={styles.boxText}>Events</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        style={[styles.box, { backgroundColor: '#FF9800' }]}
+                        onPress={() => navigation.navigate('StudentList')}
+                    >
+                        <MaterialIcons name="school" size={20} color="white" />
+                        <Text style={styles.boxText}>Attendance</Text>
+                    </TouchableOpacity>
+                </View>
+            </Animated.View>
         </View>
-      </Modal>
-    </View>
-  );
+    );
 };
 
 export default SuperAdminScreen;
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 10,
-    backgroundColor: '#e0f7fa',
-  },
-  scrollContainer: {
-    paddingBottom: 20,
-  },
-  signoutButton: {
-    backgroundColor: '#B51645',
-    paddingVertical: 15,
-    flexDirection: 'row',
-    paddingHorizontal: 25,
-    borderRadius: 30,
-    alignSelf: 'center',
-    marginTop: 20,
-  },
-  ButtonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  button: {
-    width: '50%',
-    padding: 8,
-    backgroundColor: '#D91656',
-    borderRadius: 10,
-    alignItems: 'center',
-    margin: 15,
-  },
-  buttonText: {
-    color: '#fff',
-    fontSize: 15,
-    fontWeight: '500',
-  },
-  card: {
-    backgroundColor: '#fff',
-    borderRadius: 10,
-    padding: 10,
-    margin: 10,
-    justifyContent: 'space-between',
-    marginVertical: 10,
-    flexDirection: 'column',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 5,
-  },
-  location: {
-      fontSize: 14,
-      color: '#666',
-  },
-  locationText: {
-      color: '#005B9F',
-      textDecorationLine: 'underline',
-  },
-  actioncard: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
-    marginTop: 5,
-    marginBottom: 5,
-  },
-  date: {
-    fontSize: 14,
-    color: '#888',
-    marginVertical: 4,
-  },
-  description: {
-    fontSize: 14,
-    color: '#666',
-  },
-  modalContainer: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.9)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  fullscreenImage: {
-    width: '100%',
-    height: '80%',
-  },
-  closeButton: {
-    position: 'absolute',
-    top: 40,
-    right: 20,
-    padding: 10,
-    backgroundColor: 'rgba(255, 255, 255, 0.7)',
-    borderRadius: 5,
-  },
-  closeButtonText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#000',
-  },
-  buttonRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  iconButton: {
-    backgroundColor: '#6a1b9a',
-    padding: 5,
-    margin: 10,
-    borderRadius: 6,
-  },
-  addButton: {
-    backgroundColor: '#6a1b9a',
-    paddingVertical: 15,
-    paddingHorizontal: 25,
-    borderRadius: 30,
-    alignSelf: 'center',
-  },
-  userButton: {
-    backgroundColor: '#15B392',
-    paddingVertical: 15,
-    paddingHorizontal: 25,
-    borderRadius: 30,
-    alignSelf: 'center',
-    marginTop: 20,
-  },
-  ButtonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  eventPoster: {
-    width: '100%',
-    height: 200,
-    borderRadius: 8,
-    marginBottom: 10,
-  },
-  bold: {
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  actionContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginBottom: 20,
-  },
-  loadingIndicator: {
-    marginTop: 20,
-  },
-  bottomPadding: {
-    height: 100,
-  },
+    container: {
+        flex: 1,
+        padding: 20,
+        backgroundColor: '#f3f3f3',
+    },
+    actionContainer: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        marginBottom: 20,
+    },
+    button: {
+        flexDirection: 'row',
+        paddingVertical: 15,
+        paddingHorizontal: 25,
+        borderRadius: 30,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginVertical: 10,
+        elevation: 5,
+    },
+    buttonText: {
+        color: 'white',
+        fontSize: 16,
+        fontWeight: 'bold',
+        marginLeft: 10, // Added space between icon and text
+    },
+    boxContainer: {
+            flexWrap: 'wrap',
+            justifyContent: 'space-between',
+            marginBottom: 20,
+    },
+    box: {
+        width: '100%', // Make each box 48% of the container width to allow for 2 in a row
+        paddingVertical: 30,
+        paddingHorizontal: 20,
+        borderRadius: 15,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: 20,
+        elevation: 5,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.3,
+        shadowRadius: 4,
+    },
+    boxText: {
+        color: 'white',
+        fontSize: 18,
+        fontWeight: 'bold',
+        marginTop: 10, // Adds space between icon and text
+        textAlign: 'center',
+    },
 });
+
